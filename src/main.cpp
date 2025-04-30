@@ -87,7 +87,7 @@ void maze1Rec(node** grid, int r, int c,int n, int m){
     grid[r][c].vis = true;
    
     int dir = rand() % 4;
-    std::cout<< dir << "\n";
+    //std::cout<< dir << "\n";
     for(int i = 0; i < 4; i++){
         link(grid, r , c, n , m, dir);
         switch (dir)
@@ -117,7 +117,6 @@ void maze1Rec(node** grid, int r, int c,int n, int m){
 
 
 void maze2(bool** grid, int r, int c){
-    
 
 }
 
@@ -128,7 +127,6 @@ void maze3(bool** grid, int r, int c){
 
 void maze4(bool** grid, int r, int c){
     
-
 }
 
 
@@ -139,11 +137,13 @@ void maze4(bool** grid, int r, int c){
 int main()
 {
     srand((int)time((NULL)));
+    
     auto window = sf::RenderWindow({1080u, 1080u}, "CMake SFML Project");
     int r = 32;
     int c = 32;
     int pr = 0;
     int pc = 0;
+    double scale = 1080 / r;
     sf::RectangleShape rect;
     rect.setPosition(pr,pc);
     rect.setSize(sf::Vector2f(20,20));
@@ -172,7 +172,7 @@ int main()
                     }
             
                 }
-                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
                     if(pc > 0){
                         if(vis[pr][pc].west){
                             pc--;
@@ -181,21 +181,50 @@ int main()
 
                 }
                 
-                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)){
                     if(pr < r - 1){
                         if(vis[pr][pc].south){
                             pr++;
                         }
                     }    
                 }
-                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
                     if(pr  > 0){
                         if(vis[pr][pc].north){
                             pr--;
                         }
                     }
+                }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)){
+                    reset(vis,r,c);
+                    maze1Rec(vis,0,0,r,c);
                 }
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::I)){
+                    for(int i = 0; i < r; i++ ){
+                        free(vis[i]);
+                    }
+                    pr = 0;
+                    pc = 0;
+                    free(vis);
+                    r++;
+                    c++;
+                    vis = gen(r,c);
+
+                }
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::J) && r > 4){
+                    pr = 0;
+                    pc = 0;
+                    for(int i = 0; i < r; i++){
+                        free(vis[i]);
+                    }
+                    free(vis);
+                    r--;
+                    c--;
+                    vis = gen(r,c);
+                
+                }
+                
             }
+            
         }
 
         window.clear();
