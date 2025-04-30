@@ -1,6 +1,50 @@
 #include <SFML/Graphics.hpp>
 #include <time.h>
 #include <iostream>
+#include <vector>
+
+
+class UnionFind {
+private:
+    std::vector<int> parent, rank;
+public:
+    UnionFind(int n) {
+        parent.resize(n);
+        rank.resize(n, 0);
+        for (int i = 0; i < n; i++) {
+            parent[i] = i;
+        }
+    }
+    
+    int find(int x) {
+        if (parent[x] == x) {
+            return x;
+        }
+        return parent[x] = find(parent[x]); // path compression
+    }
+    
+    void merge(int x, int y) {
+        int rootX = find(x);
+        int rootY = find(y);
+        if (rootX != rootY) {
+            if (rank[rootX] > rank[rootY]) {
+                parent[rootY] = rootX;
+            } else if (rank[rootX] < rank[rootY]) {
+                parent[rootX] = rootY;
+            } else {
+                parent[rootY] = rootX;
+                rank[rootX]++;
+            }
+        }
+    }
+};
+
+
+
+
+
+
+
 class node
 
 {
@@ -81,6 +125,54 @@ void link(node** grid, int r, int c, int n, int m, int dir){
         break;
     }
 }
+int parse(int r, int c,int n){
+    return r*n + c;
+}
+bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
+
+    switch (dir)
+    {
+    case 0:
+        
+        if(r < n-1 && uf->find(parse(r,c,n)) != uf->find(parse(r+1,c,n))){ 
+            grid[r][c].south = true;
+            grid[r+1][c].north = true;
+            uf->merge(parse(r,c,n),parse(r+1,c,n));
+            return true;
+            break;
+        }
+        
+    case 1:
+        if(r > 0 && uf->find(parse(r,c,n)) != uf->find(parse(r-1,c,n))){
+            grid[r][c].north = true;
+            grid[r-1][c].south = true;
+            uf->merge(parse(r,c,n),parse(r-1,c,n));
+            return true;
+            break;
+        }
+    case 2:
+        if(c > 0 && uf->find(parse(r,c,n)) != uf->find(parse(r,c-1,n))){
+
+            grid[r][c].west = true;
+            grid[r][c-1].east = true;
+            uf->merge(parse(r,c,n),parse(r,c-1,n));
+            return true;
+            break;
+        }
+    case 3:
+        if(c < m -1 && uf->find(parse(r,c,n)) != uf->find(parse(r,c+1,n))){
+            grid[r][c].east = true;
+            grid[r][c+1].west = true;
+            uf->merge(parse(r,c,n),parse(r,c+1,n));
+            return true;
+            break;
+        }
+        
+    default:
+        break;
+    }
+    return false;
+}
 
 
 void maze1Rec(node** grid, int r, int c,int n, int m){
@@ -119,8 +211,22 @@ void maze1Rec(node** grid, int r, int c,int n, int m){
 }
 
 
-void maze2(bool** grid, int r, int c){
+void maze2(node** grid, int n, int m){
+    UnionFind* uf = new UnionFind(n * m);
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < m; j++){
+            int dir = rand() % 4;
+            for(int k = 0; k < 4; k++){
+                if(link2(grid,i,j,n,m,dir,uf)){
+                    break;
+                }
+                dir++;
+                dir %= 4;
+            }
+        }
+    }
     
+
 }
 
 void maze3(bool** grid, int r, int c){
@@ -140,7 +246,7 @@ void maze4(bool** grid, int r, int c){
 int main()
 {
     srand((int)time((NULL)));
-    
+
     auto window = sf::RenderWindow({1080u, 1080u}, "CMake SFML Project");
     int r = 32;
     int c = 32;
@@ -153,7 +259,6 @@ int main()
     rect.setFillColor(sf::Color::Red);
     window.setFramerateLimit(144);
     node** vis = new node*[r];
-    
     for(int i = 0; i < r; i++){
         vis[i] = new node[c];
     }
@@ -165,6 +270,7 @@ int main()
             if (event.type == sf::Event::Closed)
             {
                 window.close();
+                return 0;
             }
             if(event.type == sf::Event::KeyPressed){
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
@@ -202,6 +308,11 @@ int main()
                     maze1Rec(vis,0,0,r,c);
                     pc = 0;
                     pr = 0;
+                }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)){
+                    reset(vis,r,c);
+                    maze2(vis,r,c);
+                    pr = 0;
+                    pc = 0;
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::I)){
                     for(int i = 0; i < r; i++ ){
@@ -258,7 +369,6 @@ int main()
                 if(!vis[i-1][j-1].south){
                     lines[0].position = sf::Vector2f(j * scale, i * scale + scale);
                     lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
-
                     window.draw(lines);
                 }
                 
