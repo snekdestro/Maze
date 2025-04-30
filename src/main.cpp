@@ -21,7 +21,10 @@ public:
     }
     //do shit
 };
-
+struct pair{
+    int r;
+    int c;
+};
 
 
 void reset(node** arr, int r, int c){
@@ -117,7 +120,7 @@ void maze1Rec(node** grid, int r, int c,int n, int m){
 
 
 void maze2(bool** grid, int r, int c){
-
+    
 }
 
 void maze3(bool** grid, int r, int c){
@@ -143,10 +146,10 @@ int main()
     int c = 32;
     int pr = 0;
     int pc = 0;
-    double scale = 1080 / r;
+    double scale = 1080 / (r+1);
     sf::RectangleShape rect;
     rect.setPosition(pr,pc);
-    rect.setSize(sf::Vector2f(20,20));
+    rect.setSize(sf::Vector2f(scale,scale));
     rect.setFillColor(sf::Color::Red);
     window.setFramerateLimit(144);
     node** vis = new node*[r];
@@ -197,6 +200,8 @@ int main()
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)){
                     reset(vis,r,c);
                     maze1Rec(vis,0,0,r,c);
+                    pc = 0;
+                    pr = 0;
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::I)){
                     for(int i = 0; i < r; i++ ){
@@ -208,7 +213,8 @@ int main()
                     r++;
                     c++;
                     vis = gen(r,c);
-
+                    scale = 1080. / (r + 1);
+                    rect.setSize(sf::Vector2f(scale,scale));
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::J) && r > 4){
                     pr = 0;
@@ -220,7 +226,8 @@ int main()
                     r--;
                     c--;
                     vis = gen(r,c);
-                
+                    scale = (1080.) / (r + 1);
+                    rect.setSize(sf::Vector2f(scale,scale));
                 }
                 
             }
@@ -229,28 +236,28 @@ int main()
 
         window.clear();
         sf::VertexArray lines(sf::LinesStrip, 2);
-        rect.setPosition((pc+1) * 20,(pr + 1) * 20);
+        rect.setPosition((pc+1) * scale,(pr + 1) * scale);
         window.draw(rect);
         for(int i =1 ; i <= r; i++){
             for(int j = 1; j <= c; j++){
                 if(!vis[i-1][j-1].north){
-                    lines[0].position = sf::Vector2f(j * 20,i * 20);
-                    lines[1].position = sf::Vector2f(j * 20 + 20, i * 20);
+                    lines[0].position = sf::Vector2f(j * scale,i * scale);
+                    lines[1].position = sf::Vector2f(j * scale + scale, i * scale);
                     window.draw(lines);
                 }
                 if(!vis[i-1][j-1].east){
-                    lines[0].position = sf::Vector2f(j * 20 + 20,i * 20);
-                    lines[1].position = sf::Vector2f(j * 20 + 20, i * 20 + 20);
+                    lines[0].position = sf::Vector2f(j * scale + scale,i * scale);
+                    lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
                     window.draw(lines);
                 }
                 if(!vis[i-1][j-1].west){
-                    lines[0].position = sf::Vector2f(j * 20 , i * 20);
-                    lines[1].position = sf::Vector2f(j * 20, i * 20 + 20);
+                    lines[0].position = sf::Vector2f(j * scale , i * scale);
+                    lines[1].position = sf::Vector2f(j * scale, i * scale + scale);
                     window.draw(lines);
                 }
                 if(!vis[i-1][j-1].south){
-                    lines[0].position = sf::Vector2f(j * 20, i * 20 + 20);
-                    lines[1].position = sf::Vector2f(j * 20 + 20, i * 20 + 20);
+                    lines[0].position = sf::Vector2f(j * scale, i * scale + scale);
+                    lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
 
                     window.draw(lines);
                 }
@@ -258,7 +265,7 @@ int main()
             }
             
         }
-       
+        
         window.display();
     }
 }
