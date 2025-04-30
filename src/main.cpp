@@ -221,6 +221,7 @@ void maze1Rec(node** grid, int r, int c,int n, int m){
             dir++;
             dir %= 4;
     }
+
 }
 
 
@@ -294,14 +295,18 @@ int main()
     double scale = 1080 / (r+1);
     sf::RectangleShape rect;
     rect.setPosition(pr,pc);
+    sf::RectangleShape movingRect;
+    
     rect.setSize(sf::Vector2f(scale,scale));
+    movingRect.setSize(sf::Vector2f(scale,scale));
+    movingRect.setFillColor(sf::Color::Blue);
     rect.setFillColor(sf::Color::Red);
     window.setFramerateLimit(144);
     node** vis = new node*[r];
     for(int i = 0; i < r; i++){
         vis[i] = new node[c];
     }
-    maze1Rec(vis,0,0,r,c);
+  //  maze1Rec(vis,0,0,r,c);
     while (window.isOpen())
     {
         for (auto event = sf::Event(); window.pollEvent(event);)
@@ -345,6 +350,11 @@ int main()
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)){
                     reset(vis,r,c);
                     maze1Rec(vis,0,0,r,c);
+                    for(int i = 0; i < r; i++){
+                        for(int j = 0; j < r; j++){
+                            vis[i][j].vis = false;
+                        }
+                    }
                     pc = 0;
                     pr = 0;
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)){
@@ -371,6 +381,7 @@ int main()
                     vis = gen(r,c);
                     scale = 1080. / (r + 1);
                     rect.setSize(sf::Vector2f(scale,scale));
+                    movingRect.setSize(sf::Vector2f(scale,scale));
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::J) && r > 4){
                     pr = 0;
@@ -384,15 +395,24 @@ int main()
                     vis = gen(r,c);
                     scale = (1080.) / (r + 1);
                     rect.setSize(sf::Vector2f(scale,scale));
+                    movingRect.setSize(sf::Vector2f(scale,scale));
                 }
                 
             }
             
         }
-
+        vis[pr][pc].vis = true;
         window.clear();
         sf::VertexArray lines(sf::LinesStrip, 2);
         rect.setPosition((pc+1) * scale,(pr + 1) * scale);
+        for(int i = 1; i <= r; i++){
+            for(int j = 1; j <= c; j++){
+                if(vis[i-1][j-1].vis){
+                    movingRect.setPosition(j * scale, i * scale);
+                    window.draw(movingRect);
+                }
+            }
+        }
         window.draw(rect);
         for(int i =1 ; i <= r; i++){
             for(int j = 1; j <= c; j++){
