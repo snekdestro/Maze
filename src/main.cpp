@@ -63,11 +63,24 @@ public:
         west = false;
         vis = false;
     }
-    //do shit
+
 };
 struct pair{
     int r;
     int c;
+};
+
+class edge
+{
+    public:
+    int r,c;
+    int dir;
+    edge(int i , int j, int d){
+        dir = d;
+        r = i;
+        c = j;
+
+    }
 };
 
 
@@ -225,13 +238,39 @@ void maze2(node** grid, int n, int m){
             }
         }
     }
-    
-
+    free(uf);
 }
 
-void maze3(bool** grid, int r, int c){
-    
+void maze3(node** grid, int n, int m){
+    int pushed = 0;
+    int used = 0;
+    std::vector<edge> edges;
 
+    for(int i = 0; i < n; i++){
+        for(int j = 0; j < m; j++){
+            for(int k = 0; k  < 4; k++){
+                edges.push_back(edge(i,j,k));
+            }
+        }
+    }
+    UnionFind* uf = new UnionFind(n * m);
+
+    while(pushed  < edges.size()){
+ 
+        int idx =( rand() % (edges.size() - pushed)) + pushed;
+        if(link2(grid,edges[idx].r,edges[idx].c,n,m,edges[idx].dir,uf)){
+            used++;
+            //why is this here lmao
+        }
+        edge temp = edges[idx];
+        edges[idx] = edges[pushed];
+        edges[pushed] = temp;
+        pushed++;
+        //swapping instead of removing since its just a smidge faster (an easier to write)
+    }
+    edges = std::vector<edge>();
+    free(uf);
+    
 }
 
 void maze4(bool** grid, int r, int c){
@@ -311,6 +350,12 @@ int main()
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)){
                     reset(vis,r,c);
                     maze2(vis,r,c);
+                    pr = 0;
+                    pc = 0;
+                }
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num3)){
+                    reset(vis,r,c);
+                    maze3(vis,r,c);
                     pr = 0;
                     pc = 0;
                 }
