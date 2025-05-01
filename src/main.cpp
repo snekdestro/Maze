@@ -37,14 +37,8 @@ public:
             }
         }
     }
+    
 };
-
-
-
-
-
-
-
 class node
 
 {
@@ -79,10 +73,45 @@ class edge
         dir = d;
         r = i;
         c = j;
-
     }
 };
 
+
+
+
+
+auto window = sf::RenderWindow({1080u, 1080u}, "CMake SFML Project");
+double scale = 1080 / (32+1);
+void draw(node** vis, int r, int c){
+    
+    sf::VertexArray lines(sf::LinesStrip,2);
+    for(int i =1 ; i <= r; i++){
+        for(int j = 1; j <= c; j++){
+            if(!vis[i-1][j-1].north){
+                lines[0].position = sf::Vector2f(j * scale,i * scale);
+                lines[1].position = sf::Vector2f(j * scale + scale, i * scale);
+                window.draw(lines);
+            }
+            if(!vis[i-1][j-1].east){
+                lines[0].position = sf::Vector2f(j * scale + scale,i * scale);
+                lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
+                window.draw(lines);
+            }
+            if(!vis[i-1][j-1].west){
+                lines[0].position = sf::Vector2f(j * scale , i * scale);
+                lines[1].position = sf::Vector2f(j * scale, i * scale + scale);
+                window.draw(lines);
+            }
+            if(!vis[i-1][j-1].south){
+                lines[0].position = sf::Vector2f(j * scale, i * scale + scale);
+                lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
+                window.draw(lines);
+            }
+            
+        }
+        
+    }
+}
 
 void reset(node** arr, int r, int c){
     for(int i = 0; i < r; i++){
@@ -101,6 +130,12 @@ node** gen(int r, int c){
     reset(grid, r, c);
     return grid;
 }
+
+bool visualizer = false;
+
+
+
+
 void link(node** grid, int r, int c, int n, int m, int dir){
     switch (dir)
     {
@@ -109,7 +144,11 @@ void link(node** grid, int r, int c, int n, int m, int dir){
         if(r < n-1  && !grid[r+1][c].vis){ 
             grid[r][c].south = true;
             grid[r+1][c].north = true;
-
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
             break;
         }
         
@@ -117,7 +156,11 @@ void link(node** grid, int r, int c, int n, int m, int dir){
         if(r > 0  && !grid[r-1][c].vis){
             grid[r][c].north = true;
             grid[r-1][c].south = true;
-     
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
             break;
         }
     case 2:
@@ -125,18 +168,36 @@ void link(node** grid, int r, int c, int n, int m, int dir){
 
             grid[r][c].west = true;
             grid[r][c-1].east = true;
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
             break;
         }
     case 3:
         if(c < m -1 && !grid[r][c+1].vis){
             grid[r][c].east = true;
             grid[r][c+1].west = true;
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
             break;
         }
         
     default:
         break;
     }
+
+
+
+
+
+
+
+  
 }
 int parse(int r, int c,int n){
     return r*n + c;
@@ -151,6 +212,11 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].south = true;
             grid[r+1][c].north = true;
             uf->merge(parse(r,c,n),parse(r+1,c,n));
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
             return true;
             break;
         }
@@ -160,6 +226,11 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].north = true;
             grid[r-1][c].south = true;
             uf->merge(parse(r,c,n),parse(r-1,c,n));
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
             return true;
             break;
         }
@@ -169,6 +240,11 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].west = true;
             grid[r][c-1].east = true;
             uf->merge(parse(r,c,n),parse(r,c-1,n));
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
             return true;
             break;
         }
@@ -177,11 +253,18 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].east = true;
             grid[r][c+1].west = true;
             uf->merge(parse(r,c,n),parse(r,c+1,n));
+            if(visualizer){
+                window.clear();
+                draw(grid,n,m);
+                window.display();
+            }
+            
             return true;
             break;
         }
         
     default:
+        window.clear();
         break;
     }
     return false;
@@ -239,7 +322,8 @@ void maze2(node** grid, int n, int m){
             }
         }
     }
-    free(uf);
+    
+    delete(uf);
 }
 
 void maze3(node** grid, int n, int m){
@@ -269,8 +353,8 @@ void maze3(node** grid, int n, int m){
         pushed++;
         //swapping instead of removing since its just a smidge faster (an easier to write)
     }
-    edges = std::vector<edge>();
-    free(uf);
+    //edges = std::vector<edge>();
+    delete(uf);
     
 }
 
@@ -283,16 +367,18 @@ void maze4(bool** grid, int r, int c){
 
 
 
+
+
 int main()
 {
     srand((int)time((NULL)));
 
-    auto window = sf::RenderWindow({1080u, 1080u}, "CMake SFML Project");
-    int r = 32;
-    int c = 32;
+   
+    int r = 4;
+    int c = 4;
     int pr = 0;
     int pc = 0;
-    double scale = 1080 / (r+1);
+    
     sf::RectangleShape rect;
     rect.setPosition(pr,pc);
     sf::RectangleShape movingRect;
@@ -309,6 +395,7 @@ int main()
   //  maze1Rec(vis,0,0,r,c);
     while (window.isOpen())
     {
+        
         for (auto event = sf::Event(); window.pollEvent(event);)
         {
             if (event.type == sf::Event::Closed)
@@ -349,12 +436,17 @@ int main()
                     }
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)){
                     reset(vis,r,c);
+ 
+                    if(visualizer){
+                        draw(vis,r,c);
+                    }
                     maze1Rec(vis,0,0,r,c);
                     for(int i = 0; i < r; i++){
                         for(int j = 0; j < r; j++){
                             vis[i][j].vis = false;
                         }
                     }
+                    
                     pc = 0;
                     pr = 0;
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)){
@@ -396,52 +488,36 @@ int main()
                     scale = (1080.) / (r + 1);
                     rect.setSize(sf::Vector2f(scale,scale));
                     movingRect.setSize(sf::Vector2f(scale,scale));
+                }else if (sf::Keyboard::isKeyPressed(sf::Keyboard::V)){
+                    visualizer = !visualizer;
                 }
                 
             }
             
         }
-        vis[pr][pc].vis = true;
-        window.clear();
-        sf::VertexArray lines(sf::LinesStrip, 2);
-        rect.setPosition((pc+1) * scale,(pr + 1) * scale);
-        for(int i = 1; i <= r; i++){
-            for(int j = 1; j <= c; j++){
-                if(vis[i-1][j-1].vis){
-                    movingRect.setPosition(j * scale, i * scale);
-                    window.draw(movingRect);
-                }
-            }
-        }
-        window.draw(rect);
-        for(int i =1 ; i <= r; i++){
-            for(int j = 1; j <= c; j++){
-                if(!vis[i-1][j-1].north){
-                    lines[0].position = sf::Vector2f(j * scale,i * scale);
-                    lines[1].position = sf::Vector2f(j * scale + scale, i * scale);
-                    window.draw(lines);
-                }
-                if(!vis[i-1][j-1].east){
-                    lines[0].position = sf::Vector2f(j * scale + scale,i * scale);
-                    lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
-                    window.draw(lines);
-                }
-                if(!vis[i-1][j-1].west){
-                    lines[0].position = sf::Vector2f(j * scale , i * scale);
-                    lines[1].position = sf::Vector2f(j * scale, i * scale + scale);
-                    window.draw(lines);
-                }
-                if(!vis[i-1][j-1].south){
-                    lines[0].position = sf::Vector2f(j * scale, i * scale + scale);
-                    lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
-                    window.draw(lines);
-                }
-                
-            }
-            
-        }
+
+            vis[pr][pc].vis = true;
         
-        window.display();
+            window.clear();
+        
+     
+            rect.setPosition((pc+1) * scale,(pr + 1) * scale);
+            for(int i = 1; i <= r; i++){
+                for(int j = 1; j <= c; j++){
+                    if(vis[i-1][j-1].vis){
+                        movingRect.setPosition(j * scale, i * scale);
+                        window.draw(movingRect);
+                    }
+                }
+            }
+        
+            window.draw(rect);
+         
+            draw(vis, r, c);
+            
+            window.display();
+        
+        
     }
 }
 
