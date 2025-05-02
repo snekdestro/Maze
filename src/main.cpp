@@ -487,6 +487,7 @@ int main()
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
                     if(pc < c -1){
                         if(vis[pr][pc].east){
+                            vis[pr][pc].vis = true;
                             pc++;
                         }
                     }
@@ -495,6 +496,7 @@ int main()
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
                     if(pc > 0){
                         if(vis[pr][pc].west){
+                            vis[pr][pc].vis = true;
                             pc--;
                         }
                     }
@@ -503,6 +505,7 @@ int main()
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)){
                     if(pr < r - 1){
                         if(vis[pr][pc].south){
+                            vis[pr][pc].vis = true;
                             pr++;
                         }
                     }    
@@ -510,6 +513,7 @@ int main()
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
                     if(pr  > 0){
                         if(vis[pr][pc].north){
+                            vis[pr][pc].vis = true;
                             pr--;
                         }
                     }
