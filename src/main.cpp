@@ -75,42 +75,68 @@ class edge
         c = j;
     }
 };
+int rTick = 0;
+double scale = 1080 / (32+1);
 
+
+std::vector<sf::VertexArray> prepVert(int r, int c){
+    std::vector<sf::VertexArray> vert(r);
+    for(int i = 0; i < r; i++){
+        vert[i] = sf::VertexArray(sf::Lines);
+    }
+    for(int i = 1; i <= c; i++){
+        
+        for(int j = 1; j <= r; j++){
+            vert[i-1].append(sf::Vector2f(i * scale, j * scale));
+            vert[i-1].append(sf::Vector2f(i * scale, j * scale + scale));
+
+        }
+        //vert[i-1].append(sf::Vector2f(i * scale + scale, (r+1) * scale));
+    }
+    return vert;
+}
+
+
+std::vector<sf::VertexArray> prepHoriz(int r, int c){
+    std::vector<sf::VertexArray> horiz(c);
+    for(int i = 0; i < r; i++){
+        horiz[i] = sf::VertexArray(sf::Lines);
+    }
+    for(int i = 1; i <= r; i++){
+        
+        for(int j = 1; j <= c; j++){
+            horiz[i-1].append(sf::Vector2f(j* scale, i * scale));
+            horiz[i-1].append(sf::Vector2f(j * scale + scale, i * scale));
+        }
+        horiz[i-1].append(sf::Vector2f((c+1) * scale , i * scale+scale));
+    }
+    return horiz;
+}
+std::vector<sf::VertexArray> vert = prepVert(4,4);
+std::vector<sf::VertexArray> horiz = prepHoriz(4,4); 
 
 
 
 
 auto window = sf::RenderWindow({1080u, 1080u}, "CMake SFML Project");
-double scale = 1080 / (32+1);
-void draw(node** vis, int r, int c){
-    
-    sf::VertexArray lines(sf::LinesStrip,2);
-    for(int i =1 ; i <= r; i++){
-        for(int j = 1; j <= c; j++){
-            if(!vis[i-1][j-1].north){
-                lines[0].position = sf::Vector2f(j * scale,i * scale);
-                lines[1].position = sf::Vector2f(j * scale + scale, i * scale);
-                window.draw(lines);
-            }
-            if(!vis[i-1][j-1].east){
-                lines[0].position = sf::Vector2f(j * scale + scale,i * scale);
-                lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
-                window.draw(lines);
-            }
-            if(!vis[i-1][j-1].west){
-                lines[0].position = sf::Vector2f(j * scale , i * scale);
-                lines[1].position = sf::Vector2f(j * scale, i * scale + scale);
-                window.draw(lines);
-            }
-            if(!vis[i-1][j-1].south){
-                lines[0].position = sf::Vector2f(j * scale, i * scale + scale);
-                lines[1].position = sf::Vector2f(j * scale + scale, i * scale + scale);
-                window.draw(lines);
-            }
-            
-        }
-        
+
+void draw(int n, int m){
+   
+    if(rTick < (n +m) / 4){
+        rTick++;
+        return;
     }
+    window.clear();
+    for(int i = 0; i < n; i++){
+        window.draw(horiz[i]);
+    }
+    for(int i = 0; i < m; i++){
+        window.draw(vert[i]);
+    }
+    window.display();
+    rTick %= ((n + m) / 4);
+    
+    
 }
 
 void reset(node** arr, int r, int c){
@@ -134,6 +160,16 @@ node** gen(int r, int c){
 bool visualizer = false;
 
 
+void toggleVert(int r, int c){
+    vert[c][2 * r].color = sf::Color::Black;
+    vert[c][2*r+1].color = sf::Color::Black;
+}
+void toggleHoriz(int r, int c){
+    horiz[r][2 * c].color = sf::Color::Black;
+    horiz[r][2 *c+1].color = sf::Color::Black;
+}
+
+
 
 
 void link(node** grid, int r, int c, int n, int m, int dir){
@@ -144,10 +180,11 @@ void link(node** grid, int r, int c, int n, int m, int dir){
         if(r < n-1  && !grid[r+1][c].vis){ 
             grid[r][c].south = true;
             grid[r+1][c].north = true;
+            toggleHoriz(r+1,c);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+                
+                draw(n,m);
+            
             }
             break;
         }
@@ -156,10 +193,11 @@ void link(node** grid, int r, int c, int n, int m, int dir){
         if(r > 0  && !grid[r-1][c].vis){
             grid[r][c].north = true;
             grid[r-1][c].south = true;
+            toggleHoriz(r,c);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+             
+                draw(n,m);
+        
             }
             break;
         }
@@ -168,10 +206,11 @@ void link(node** grid, int r, int c, int n, int m, int dir){
 
             grid[r][c].west = true;
             grid[r][c-1].east = true;
+            toggleVert(r, c);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+             
+                draw(n,m);
+         
             }
             break;
         }
@@ -179,10 +218,11 @@ void link(node** grid, int r, int c, int n, int m, int dir){
         if(c < m -1 && !grid[r][c+1].vis){
             grid[r][c].east = true;
             grid[r][c+1].west = true;
+            toggleVert(r,c + 1);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+              
+                draw(n,m);
+             
             }
             break;
         }
@@ -190,6 +230,7 @@ void link(node** grid, int r, int c, int n, int m, int dir){
     default:
         break;
     }
+    
 
 
 
@@ -212,10 +253,11 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].south = true;
             grid[r+1][c].north = true;
             uf->merge(parse(r,c,n),parse(r+1,c,n));
+            toggleHoriz(r+1,c);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+
+                draw(n,m);
+ 
             }
             return true;
             break;
@@ -226,10 +268,11 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].north = true;
             grid[r-1][c].south = true;
             uf->merge(parse(r,c,n),parse(r-1,c,n));
+            toggleHoriz(r,c);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+            
+                draw(n,m);
+      
             }
             return true;
             break;
@@ -240,10 +283,11 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].west = true;
             grid[r][c-1].east = true;
             uf->merge(parse(r,c,n),parse(r,c-1,n));
+            toggleVert(r, c);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+                
+                draw(n,m);
+          
             }
             return true;
             break;
@@ -253,10 +297,11 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             grid[r][c].east = true;
             grid[r][c+1].west = true;
             uf->merge(parse(r,c,n),parse(r,c+1,n));
+            toggleVert(r,c + 1);
             if(visualizer){
-                window.clear();
-                draw(grid,n,m);
-                window.display();
+              
+                draw(n,m);
+               
             }
             
             return true;
@@ -264,7 +309,7 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
         }
         
     default:
-        window.clear();
+       
         break;
     }
     return false;
@@ -304,7 +349,9 @@ void maze1Rec(node** grid, int r, int c,int n, int m){
             dir++;
             dir %= 4;
     }
-
+    if(visualizer){
+        draw(n,m);
+    }
 }
 
 
@@ -392,6 +439,7 @@ int main()
     for(int i = 0; i < r; i++){
         vis[i] = new node[c];
     }
+    
   //  maze1Rec(vis,0,0,r,c);
     while (window.isOpen())
     {
@@ -420,7 +468,6 @@ int main()
                     }
 
                 }
-                
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)){
                     if(pr < r - 1){
                         if(vis[pr][pc].south){
@@ -436,9 +483,10 @@ int main()
                     }
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)){
                     reset(vis,r,c);
- 
+                    horiz = prepHoriz(r,c);
+                    vert = prepVert(r,c);
                     if(visualizer){
-                        draw(vis,r,c);
+                        draw(r,c);
                     }
                     maze1Rec(vis,0,0,r,c);
                     for(int i = 0; i < r; i++){
@@ -451,12 +499,16 @@ int main()
                     pr = 0;
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)){
                     reset(vis,r,c);
+                    horiz = prepHoriz(r,c);
+                    vert = prepVert(r,c);
                     maze2(vis,r,c);
                     pr = 0;
                     pc = 0;
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num3)){
                     reset(vis,r,c);
+                    horiz = prepHoriz(r,c);
+                    vert = prepVert(r,c);
                     maze3(vis,r,c);
                     pr = 0;
                     pc = 0;
@@ -474,6 +526,9 @@ int main()
                     scale = 1080. / (r + 1);
                     rect.setSize(sf::Vector2f(scale,scale));
                     movingRect.setSize(sf::Vector2f(scale,scale));
+
+                    vert = prepVert(r,c);
+                    horiz = prepHoriz(r,c);
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::J) && r > 4){
                     pr = 0;
@@ -488,6 +543,8 @@ int main()
                     scale = (1080.) / (r + 1);
                     rect.setSize(sf::Vector2f(scale,scale));
                     movingRect.setSize(sf::Vector2f(scale,scale));
+                    vert  = prepVert(r,c);
+                     horiz = prepHoriz(r,c);
                 }else if (sf::Keyboard::isKeyPressed(sf::Keyboard::V)){
                     visualizer = !visualizer;
                 }
@@ -513,8 +570,14 @@ int main()
         
             window.draw(rect);
          
-            draw(vis, r, c);
-            
+           // draw(vis, r, c);
+            for(int i = 0; i < r; i++){
+                window.draw(vert[i]);
+                
+            }
+            for(int i = 0; i < c; i++){
+                window.draw(horiz[i]);
+            }
             window.display();
         
         
