@@ -59,9 +59,13 @@ public:
     }
 
 };
-struct pair{
-    int r;
-    int c;
+class pair{
+    public:
+        int r, c;
+        pair(int i, int j){
+            r = i;
+            c = j;
+        }
 };
 
 class edge
@@ -121,7 +125,6 @@ std::vector<sf::VertexArray> horiz = prepHoriz(4,4);
 auto window = sf::RenderWindow({1080u, 1080u}, "CMake SFML Project");
 
 void draw(int n, int m){
-   
     if(rTick < (n +m) / 4){
         rTick++;
         return;
@@ -172,7 +175,7 @@ void toggleHoriz(int r, int c){
 
 
 
-void link(node** grid, int r, int c, int n, int m, int dir){
+bool link(node** grid, int r, int c, int n, int m, int dir){
     switch (dir)
     {
     case 0:
@@ -186,6 +189,7 @@ void link(node** grid, int r, int c, int n, int m, int dir){
                 draw(n,m);
             
             }
+            return true;
             break;
         }
         
@@ -199,6 +203,7 @@ void link(node** grid, int r, int c, int n, int m, int dir){
                 draw(n,m);
         
             }
+            return true;
             break;
         }
     case 2:
@@ -212,6 +217,7 @@ void link(node** grid, int r, int c, int n, int m, int dir){
                 draw(n,m);
          
             }
+            return true;
             break;
         }
     case 3:
@@ -224,12 +230,14 @@ void link(node** grid, int r, int c, int n, int m, int dir){
                 draw(n,m);
              
             }
+            return true;
             break;
         }
         
     default:
         break;
     }
+    return false;
     
 
 
@@ -244,7 +252,9 @@ int parse(int r, int c,int n){
     return r*n + c;
 }
 bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
-
+    if ( r >= n || r < 0 ||  c < 0 || c >= m){
+        return false;
+    }
     switch (dir)
     {
     case 0:
@@ -255,9 +265,7 @@ bool link2(node** grid, int r, int c, int n, int m, int dir, UnionFind* uf){
             uf->merge(parse(r,c,n),parse(r+1,c,n));
             toggleHoriz(r+1,c);
             if(visualizer){
-
                 draw(n,m);
- 
             }
             return true;
             break;
@@ -402,11 +410,35 @@ void maze3(node** grid, int n, int m){
     }
     //edges = std::vector<edge>();
     delete(uf);
-    
 }
 
-void maze4(bool** grid, int r, int c){
-    
+
+void maze4(node** grid, int n, int m){
+    //random tree method
+    for(int i = n-1; i >=0; i--){
+        for(int j = m-1; j >= 0; j--){
+            if(j == 0){
+                link(grid,i,j,n,m,1);
+                continue;
+            }
+            int dir = rand() % 2;
+            switch (dir)
+            {
+            case 0:
+                if(!link(grid,i,j,n,m,1)){
+                    link(grid,i,j,n,m,2);
+                }
+                break;
+            case 1:
+                if(!link(grid,i,j,n,m,2)){
+                    link(grid,i,j,n,m,1);
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
 }
 
 
@@ -510,6 +542,14 @@ int main()
                     horiz = prepHoriz(r,c);
                     vert = prepVert(r,c);
                     maze3(vis,r,c);
+                    pr = 0;
+                    pc = 0;
+                }
+                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4)){
+                    reset(vis,r,c);
+                    horiz = prepHoriz(r,c);
+                    vert = prepVert(r,c);
+                    maze4(vis,r,c);
                     pr = 0;
                     pc = 0;
                 }
