@@ -88,11 +88,11 @@ std::vector<sf::VertexArray> prepVert(int r, int c){
     for(int i = 0; i < r; i++){
         vert[i] = sf::VertexArray(sf::Lines);
     }
-    for(int i = 1; i <= c; i++){
+    for(int i = 0; i < c; i++){
         
-        for(int j = 1; j <= r; j++){
-            vert[i-1].append(sf::Vector2f(i * scale, j * scale));
-            vert[i-1].append(sf::Vector2f(i * scale, j * scale + scale));
+        for(int j = 0; j <= r; j++){
+            vert[i].append(sf::Vector2f(i * scale, j * scale));
+            vert[i].append(sf::Vector2f(i * scale, j * scale + scale));
 
         }
         //vert[i-1].append(sf::Vector2f(i * scale + scale, (r+1) * scale));
@@ -106,13 +106,13 @@ std::vector<sf::VertexArray> prepHoriz(int r, int c){
     for(int i = 0; i < r; i++){
         horiz[i] = sf::VertexArray(sf::Lines);
     }
-    for(int i = 1; i <= r; i++){
+    for(int i = 0; i < r; i++){
         
-        for(int j = 1; j <= c; j++){
-            horiz[i-1].append(sf::Vector2f(j* scale, i * scale));
-            horiz[i-1].append(sf::Vector2f(j * scale + scale, i * scale));
+        for(int j = 0; j < c; j++){
+            horiz[i].append(sf::Vector2f(j* scale, i * scale));
+            horiz[i].append(sf::Vector2f(j * scale + scale, i * scale));
         }
-        horiz[i-1].append(sf::Vector2f((c+1) * scale , i * scale+scale));
+        horiz[i].append(sf::Vector2f((c+1) * scale , i * scale+scale));
     }
     return horiz;
 }
@@ -406,7 +406,7 @@ void maze3(node** grid, int n, int m){
         edges[idx] = edges[pushed];
         edges[pushed] = temp;
         pushed++;
-        //swapping instead of removing since its just a smidge faster (an easier to write)
+        //swapping instead of removing since its just a smidge faster (and easier to write)
     }
     //edges = std::vector<edge>();
     delete(uf);
@@ -567,7 +567,7 @@ int main()
                     r++;
                     c++;
                     vis = gen(r,c);
-                    scale = 1080. / (r + 1);
+                    scale = 1080. / (r);
                     rect.setSize(sf::Vector2f(scale,scale));
                     movingRect.setSize(sf::Vector2f(scale,scale));
 
@@ -584,7 +584,7 @@ int main()
                     r--;
                     c--;
                     vis = gen(r,c);
-                    scale = (1080.) / (r + 1);
+                    scale = (1080.) / (r);
                     rect.setSize(sf::Vector2f(scale,scale));
                     movingRect.setSize(sf::Vector2f(scale,scale));
                     vert  = prepVert(r,c);
@@ -602,10 +602,10 @@ int main()
             window.clear();
         
      
-            rect.setPosition((pc+1) * scale,(pr + 1) * scale);
-            for(int i = 1; i <= r; i++){
-                for(int j = 1; j <= c; j++){
-                    if(vis[i-1][j-1].vis){
+            rect.setPosition((pc) * scale,(pr) * scale);
+            for(int i = 0; i < r; i++){
+                for(int j = 0; j < c; j++){
+                    if(vis[i][j].vis){
                         movingRect.setPosition(j * scale, i * scale);
                         window.draw(movingRect);
                     }
