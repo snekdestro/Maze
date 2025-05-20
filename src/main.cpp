@@ -2,8 +2,11 @@
 #include <time.h>
 #include <iostream>
 #include <vector>
+#include <thread>
+#include <queue>
 
-
+double dt = 0.0;
+bool running = false;
 class UnionFind {
 private:
     std::vector<int> parent, rank;
@@ -50,13 +53,24 @@ public:
     bool west;
     bool east;
     bool vis;
+    sf::RectangleShape rect;
+    node(int r, int c, double scale){
+        east = false;
+        north = false;
+        south = false;
+        west = false;
+        vis = false;
+        rect.setPosition(c * scale, r * scale);
+        rect.setSize({scale,scale});
+        rect.setFillColor(sf::Color::Blue);
+    }
     node(){
         east = false;
         north = false;
         south = false;
         west = false;
         vis = false;
-    }
+    }    
 
 };
 class pair{
@@ -142,12 +156,23 @@ void draw(int n, int m){
     
 }
 
+void reset(node** arr, int r, int c,int** threadGrid){
+    for(int i = 0; i < r; i++){
+        for(int j = 0; j  <c; j++){
+            arr[i][j] = node(i,j,scale);
+            threadGrid[i][j] = 0; 
+        }
+    }
+
+}
 void reset(node** arr, int r, int c){
     for(int i = 0; i < r; i++){
         for(int j = 0; j  <c; j++){
-            arr[i][j] = node();
+            arr[i][j] = node(i,j,scale);
+  
         }
     }
+
 }
 
 
@@ -238,15 +263,6 @@ bool link(node** grid, int r, int c, int n, int m, int dir){
         break;
     }
     return false;
-    
-
-
-
-
-
-
-
-  
 }
 int parse(int r, int c,int n){
     return r*n + c;
@@ -440,7 +456,65 @@ void maze4(node** grid, int n, int m){
         }
     }
 }
+int** genThreadGrid(int r, int c){
+    int** threadGrid = new int*[r];
+    for(int i = 0; i < r; i++){
+        threadGrid[i] = new int[c];
+        for(int j = 0; j < c; j++){
+            threadGrid[i][j] = 0;
+        }
+    }
+    return threadGrid;
+}
 
+//id = 0,1,2,3...31
+class pair2{
+    public:
+        int a,b;
+        pair2(int x, int y){
+            a =x;
+            b = y;
+        }
+};
+bool fin = false;
+void floodfill(int** visgrid, int r, int c, int id,int n, int m,int* activeStat,node** grid){
+    
+    running = true;
+    std::queue<pair2> q;
+    q.push(pair2(r,c));
+    double cur;
+    while(!q.empty()){
+        
+        pair2 p = q.front();
+        q.pop();
+        cur = dt;
+        if(visgrid[p.a][p.b] & (1 << id)){
+            continue;
+        }
+
+        visgrid[p.a][p.b] |= (1 << id);
+        
+        if(grid[p.a][p.b].east && !(visgrid[p.a][p.b+1] & (1 << id))){
+            q.push(pair2(p.a,p.b + 1));
+        }
+        if(grid[p.a][p.b].south && !(visgrid[p.a+1][p.b] & (1 << id))){
+            q.push(pair2(p.a+1,p.b ));
+        }
+        
+        if(grid[p.a][p.b].north && !(visgrid[p.a-1][p.b] & (1 << id))){
+            q.push(pair2(p.a-1,p.b));
+        }
+        
+        if(grid[p.a][p.b].west && !(visgrid[p.a][p.b-1] & (1 << id))){
+            q.push(pair2(p.a,p.b - 1));
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        
+        
+    }
+    *activeStat ^= (1 << id);
+}
 
 
 
@@ -449,15 +523,14 @@ void maze4(node** grid, int n, int m){
 
 
 int main()
-{
+{   
+    int used = 0;
     srand((int)time((NULL)));
-
-   
     int r = 4;
     int c = 4;
     int pr = 0;
     int pc = 0;
-    
+    sf::Clock deltaTimer;
     sf::RectangleShape rect;
     rect.setPosition(pr,pc);
     sf::RectangleShape movingRect;
@@ -471,10 +544,20 @@ int main()
     for(int i = 0; i < r; i++){
         vis[i] = new node[c];
     }
+    int** threadGrid = new int*[r];
+    for(int i = 0; i < r; i++){
+        threadGrid[i] = new int[c];
+        for(int j = 0; j < c; j++){
+            threadGrid[i][j] = 0;
+        }
+    }
+    int threadState = 0;
     
   //  maze1Rec(vis,0,0,r,c);
     while (window.isOpen())
     {
+        fin = false;
+        dt = deltaTimer.restart().asSeconds();
         
         for (auto event = sf::Event(); window.pollEvent(event);)
         {
@@ -483,8 +566,28 @@ int main()
                 window.close();
                 return 0;
             }
+            if(event.type == sf::Event::MouseButtonPressed){
+                if(sf::Mouse::isButtonPressed(sf::Mouse::Left)){
+                    int mc = event.mouseButton.x / scale;
+                    
+                    int mr = event.mouseButton.y /scale;
+                    if(mc < 0 || mc >= c){
+                        continue;
+                    }
+                    if(mr < 0 || mr >= r){
+                        continue;
+                    }
+                    if(used >= 32){
+                        continue;
+                    }
+                    threadState |= (1 << used);
+                    std::thread t(floodfill, threadGrid, mr,mc, used++,r,c,&threadState,vis);
+                    t.detach();
+                    running = true;
+                }
+            }
             if(event.type == sf::Event::KeyPressed){
-                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right)){
+                if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right) && !running){
                     if(pc < c -1){
                         if(vis[pr][pc].east){
                             vis[pr][pc].vis = true;
@@ -493,7 +596,7 @@ int main()
                     }
             
                 }
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left)){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left) && !running){
                     if(pc > 0){
                         if(vis[pr][pc].west){
                             vis[pr][pc].vis = true;
@@ -502,7 +605,7 @@ int main()
                     }
 
                 }
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down) && !running){
                     if(pr < r - 1){
                         if(vis[pr][pc].south){
                             vis[pr][pc].vis = true;
@@ -510,15 +613,15 @@ int main()
                         }
                     }    
                 }
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up)){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Up) && !running){
                     if(pr  > 0){
                         if(vis[pr][pc].north){
                             vis[pr][pc].vis = true;
                             pr--;
                         }
                     }
-                }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1)){
-                    reset(vis,r,c);
+                }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num1) && !running){
+                    reset(vis,r,c,threadGrid);
                     horiz = prepHoriz(r,c);
                     vert = prepVert(r,c);
                     if(visualizer){
@@ -533,69 +636,91 @@ int main()
                     
                     pc = 0;
                     pr = 0;
-                }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2)){
-                    reset(vis,r,c);
+                }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2) && !running){
+                    reset(vis,r,c,threadGrid);
                     horiz = prepHoriz(r,c);
                     vert = prepVert(r,c);
                     maze2(vis,r,c);
                     pr = 0;
                     pc = 0;
                 }
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num3)){
-                    reset(vis,r,c);
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num3)&& !running){
+                    reset(vis,r,c,threadGrid);
                     horiz = prepHoriz(r,c);
                     vert = prepVert(r,c);
                     maze3(vis,r,c);
                     pr = 0;
                     pc = 0;
                 }
-                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4)){
-                    reset(vis,r,c);
+                else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4)&& !running){
+                    reset(vis,r,c,threadGrid);
                     horiz = prepHoriz(r,c);
                     vert = prepVert(r,c);
                     maze4(vis,r,c);
                     pr = 0;
                     pc = 0;
+                     used = 0;
+                    
                 }
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::I)){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::I)&& !running){
                     for(int i = 0; i < r; i++ ){
-                        free(vis[i]);
+                        delete[](vis[i]);
+                        delete[](threadGrid[i]);
                     }
+                    delete[](threadGrid);
                     pr = 0;
                     pc = 0;
-                    free(vis);
+
+                    delete[](vis);
                     r++;
                     c++;
-                    vis = gen(r,c);
                     scale = 1080. / (r);
+                    vis = gen(r,c);
+                    threadGrid = genThreadGrid(r,c);
+                    
                     rect.setSize(sf::Vector2f(scale,scale));
                     movingRect.setSize(sf::Vector2f(scale,scale));
+                     used = 0;
 
                     vert = prepVert(r,c);
                     horiz = prepHoriz(r,c);
                 }
-                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::J) && r > 4){
+                else if(sf::Keyboard::isKeyPressed(sf::Keyboard::J) && r > 4 && !running){
                     pr = 0;
                     pc = 0;
                     for(int i = 0; i < r; i++){
-                        free(vis[i]);
+                        delete[](vis[i]);
+                        delete[](threadGrid[i]);
                     }
-                    free(vis);
+                    delete[](threadGrid);
+                    delete[](vis);
+                    
                     r--;
                     c--;
+                    scale = 1080. / (r);
+                    threadGrid = genThreadGrid(r,c);
                     vis = gen(r,c);
-                    scale = (1080.) / (r);
+                    used = 0;
                     rect.setSize(sf::Vector2f(scale,scale));
                     movingRect.setSize(sf::Vector2f(scale,scale));
                     vert  = prepVert(r,c);
-                     horiz = prepHoriz(r,c);
+                    horiz = prepHoriz(r,c);
                 }else if (sf::Keyboard::isKeyPressed(sf::Keyboard::V)){
                     visualizer = !visualizer;
                 }
                 
             }
             
-        }
+        }   
+            bool threadsactive =false;
+            for(int i = 0; i < 31; i++){
+                if(threadState & (1 << i)){
+                    threadsactive = true;
+                }
+            }
+            if(!threadsactive){
+                running = false;
+            }
 
             vis[pr][pc].vis = true;
         
@@ -603,15 +728,20 @@ int main()
         
      
             rect.setPosition((pc) * scale,(pr) * scale);
+          
             for(int i = 0; i < r; i++){
                 for(int j = 0; j < c; j++){
-                    if(vis[i][j].vis){
-                        movingRect.setPosition(j * scale, i * scale);
-                        window.draw(movingRect);
+                    for(int k = 0; k < 32; k++){
+                        if(threadGrid[i][j] & (1 << k)){
+                            
+                            vis[i][j].rect.setFillColor({255 *(1 - k /3.),0,0});
+                            window.draw(vis[i][j].rect);
+                        }
                     }
+                    
                 }
             }
-        
+            
             window.draw(rect);
          
            // draw(vis, r, c);
@@ -622,7 +752,9 @@ int main()
             for(int i = 0; i < c; i++){
                 window.draw(horiz[i]);
             }
+            fin = true;
             window.display();
+          
         
         
     }
