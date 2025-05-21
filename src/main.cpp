@@ -4,6 +4,7 @@
 #include <vector>
 #include <thread>
 #include <queue>
+#include <SFML/Graphics/Texture.hpp>
 
 double dt = 0.0;
 bool running = false;
@@ -53,6 +54,7 @@ public:
     bool west;
     bool east;
     bool vis;
+    int dist;
     sf::RectangleShape rect;
     node(int r, int c, double scale){
         east = false;
@@ -60,6 +62,7 @@ public:
         south = false;
         west = false;
         vis = false;
+        dist = 0;
         rect.setPosition(c * scale, r * scale);
         rect.setSize({scale,scale});
         rect.setFillColor(sf::Color::Blue);
@@ -70,6 +73,7 @@ public:
         south = false;
         west = false;
         vis = false;
+        dist =0;
     }    
 
 };
@@ -470,10 +474,11 @@ int** genThreadGrid(int r, int c){
 //id = 0,1,2,3...31
 class pair2{
     public:
-        int a,b;
-        pair2(int x, int y){
+        int a,b,c;
+        pair2(int x, int y,int dist){
             a =x;
             b = y;
+            c = dist;
         }
 };
 bool fin = false;
@@ -481,7 +486,7 @@ void floodfill(int** visgrid, int r, int c, int id,int n, int m,int* activeStat,
     
     running = true;
     std::queue<pair2> q;
-    q.push(pair2(r,c));
+    q.push(pair2(r,c,0));
     double cur;
     while(!q.empty()){
         
@@ -495,18 +500,57 @@ void floodfill(int** visgrid, int r, int c, int id,int n, int m,int* activeStat,
         visgrid[p.a][p.b] |= (1 << id);
         
         if(grid[p.a][p.b].east && !(visgrid[p.a][p.b+1] & (1 << id))){
-            q.push(pair2(p.a,p.b + 1));
+            q.push(pair2(p.a,p.b + 1,0));
         }
         if(grid[p.a][p.b].south && !(visgrid[p.a+1][p.b] & (1 << id))){
-            q.push(pair2(p.a+1,p.b ));
+            q.push(pair2(p.a+1,p.b,0));
         }
         
         if(grid[p.a][p.b].north && !(visgrid[p.a-1][p.b] & (1 << id))){
-            q.push(pair2(p.a-1,p.b));
+            q.push(pair2(p.a-1,p.b,0));
         }
         
         if(grid[p.a][p.b].west && !(visgrid[p.a][p.b-1] & (1 << id))){
-            q.push(pair2(p.a,p.b - 1));
+            q.push(pair2(p.a,p.b - 1,0));
+        }
+        
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        
+        
+    }
+    *activeStat ^= (1 << id);
+}
+void floodfillPrime(int** visgrid, int r, int c, int id,int n, int m,int* activeStat,node** grid){
+    grid[r][c].dist = 0;
+    running = true;
+    std::queue<pair2> q;
+    q.push(pair2(r,c,0));
+
+    while(!q.empty()){
+        
+        pair2 p = q.front();
+        q.pop();
+
+        if(visgrid[p.a][p.b] & (1 << id)){
+            continue;
+        }
+        grid[p.a][p.b].dist = p.c;
+     
+        visgrid[p.a][p.b] |= (1 << id);
+
+        if(grid[p.a][p.b].east && !(visgrid[p.a][p.b+1] & (1 << id))){
+            q.push(pair2(p.a,p.b + 1,p.c+1));
+        }
+        if(grid[p.a][p.b].south && !(visgrid[p.a+1][p.b] & (1 << id))){
+            q.push(pair2(p.a+1,p.b ,p.c+1));
+        }
+        
+        if(grid[p.a][p.b].north && !(visgrid[p.a-1][p.b] & (1 << id))){
+            q.push(pair2(p.a-1,p.b,p.c+1));
+        }
+        
+        if(grid[p.a][p.b].west && !(visgrid[p.a][p.b-1] & (1 << id))){
+            q.push(pair2(p.a,p.b - 1,p.c+1));
         }
         
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -522,8 +566,13 @@ void floodfill(int** visgrid, int r, int c, int id,int n, int m,int* activeStat,
 
 
 
+
 int main()
 {   
+
+    
+    sf::Texture gridTexture;
+    bool primed = false;
     int used = 0;
     srand((int)time((NULL)));
     int r = 4;
@@ -534,7 +583,8 @@ int main()
     sf::RectangleShape rect;
     rect.setPosition(pr,pc);
     sf::RectangleShape movingRect;
-    
+    sf::RectangleShape screenRect;
+    screenRect.setSize({1080,1080});
     rect.setSize(sf::Vector2f(scale,scale));
     movingRect.setSize(sf::Vector2f(scale,scale));
     movingRect.setFillColor(sf::Color::Blue);
@@ -567,7 +617,6 @@ int main()
                 return 0;
             }
             if(event.type == sf::Event::MouseButtonPressed){
-                if(sf::Mouse::isButtonPressed(sf::Mouse::Left)){
                     int mc = event.mouseButton.x / scale;
                     
                     int mr = event.mouseButton.y /scale;
@@ -577,13 +626,33 @@ int main()
                     if(mr < 0 || mr >= r){
                         continue;
                     }
-                    if(used >= 32){
-                        continue;
+                   
+                    
+                if(sf::Mouse::isButtonPressed(sf::Mouse::Left)){
+                    if(primed){
+              
+                        for(int i = 0; i < r; i++){
+                            for(int j = 0; j < c; j++){
+                                threadGrid[i][j] = 0;
+                            }
+                        }
+                        threadState = 0;
+                        floodfillPrime(threadGrid, mr,mc, 0,r,c,&threadState,vis);
+                        
+                        //does nothing as of now
+                    
+                        
+                        
+                    }else{
+                        
+                        if(used >= 32){
+                            continue;
+                        }
+                        threadState |= (1 << used);
+                        std::thread t(floodfill, threadGrid, mr,mc, used++,r,c,&threadState,vis);
+                        t.detach();
+                        running = true;
                     }
-                    threadState |= (1 << used);
-                    std::thread t(floodfill, threadGrid, mr,mc, used++,r,c,&threadState,vis);
-                    t.detach();
-                    running = true;
                 }
             }
             if(event.type == sf::Event::KeyPressed){
@@ -633,7 +702,7 @@ int main()
                             vis[i][j].vis = false;
                         }
                     }
-                    
+                    used = 0;
                     pc = 0;
                     pr = 0;
                 }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num2) && !running){
@@ -643,6 +712,7 @@ int main()
                     maze2(vis,r,c);
                     pr = 0;
                     pc = 0;
+                    used = 0;
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::Num3)&& !running){
                     reset(vis,r,c,threadGrid);
@@ -651,6 +721,7 @@ int main()
                     maze3(vis,r,c);
                     pr = 0;
                     pc = 0;
+                    used = 0;
                 }
                 else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4)&& !running){
                     reset(vis,r,c,threadGrid);
@@ -659,7 +730,7 @@ int main()
                     maze4(vis,r,c);
                     pr = 0;
                     pc = 0;
-                     used = 0;
+                    used = 0;
                     
                 }
                 else if(sf::Keyboard::isKeyPressed(sf::Keyboard::I)&& !running){
@@ -707,11 +778,15 @@ int main()
                     horiz = prepHoriz(r,c);
                 }else if (sf::Keyboard::isKeyPressed(sf::Keyboard::V)){
                     visualizer = !visualizer;
+                }else if(sf::Keyboard::isKeyPressed(sf::Keyboard::P)){
+                    primed = !primed;
                 }
                 
             }
             
         }   
+            window.clear();
+         
             bool threadsactive =false;
             for(int i = 0; i < 31; i++){
                 if(threadState & (1 << i)){
@@ -724,17 +799,16 @@ int main()
 
             vis[pr][pc].vis = true;
         
-            window.clear();
         
      
             rect.setPosition((pc) * scale,(pr) * scale);
-          
+            if(!primed){
             for(int i = 0; i < r; i++){
                 for(int j = 0; j < c; j++){
                     for(int k = 0; k < 32; k++){
                         if(threadGrid[i][j] & (1 << k)){
                             
-                            vis[i][j].rect.setFillColor({255 *(1 - k /3.),0,0});
+                            vis[i][j].rect.setFillColor({0,255 *(1 - k /31.),k /31. * 255});
                             window.draw(vis[i][j].rect);
                         }
                     }
@@ -742,8 +816,10 @@ int main()
                 }
             }
             
-            window.draw(rect);
-         
+                window.draw(rect);
+            }else{
+                
+            }
            // draw(vis, r, c);
             for(int i = 0; i < r; i++){
                 window.draw(vert[i]);
@@ -752,9 +828,10 @@ int main()
             for(int i = 0; i < c; i++){
                 window.draw(horiz[i]);
             }
+            
             fin = true;
             window.display();
-          
+            
         
         
     }
